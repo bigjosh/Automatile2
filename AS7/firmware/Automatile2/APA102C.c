@@ -7,54 +7,76 @@
 #include <stdint.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include "Pins.h"
 #include "APA102C.h"
+
+
+
+void LED_setup() {
+    // Set clock and data to output mode    
+    LED_DDR |= LED_CLK | LED_DAT;    
+    POWER_PORT |= POWER_X;             // Turn off power initially
+    POWER_DDR |= POWER_X;   
+}
+
+void LED_powerUp() {
+    
+    POWER_PORT &= ~POWER_X;             // Activate the 5 volt boost converter (inverted logic though PNP)
+}
+
+void LED_powerDown() {
+    
+    POWER_PORT |= POWER_X;             // Activate the 5 volt boost converter (inverted logic though PNP)
+}
+
 
 #define set(port,pin) (port |= pin) // set port pin
 #define clear(port,pin) (port &= (~pin)) // clear port pin
 #define bit_val(byte,bit) (byte & (1 << bit)) // test for bit set
 
-uint8_t portSet = 0;
-void setPort(volatile uint8_t* port){
-	portSet = 1;
-	SPI_PORT = port;
-}
+// TODO:Also combine the clock set and the data set into a single operation?
 
 //bit bangs an SPI signal to the specified pins of the given data
-inline void sendBit(uint8_t clkPin, uint8_t datPin, uint8_t data){
-	if(data){
-		set(*SPI_PORT, datPin);
+static inline void sendBit(uint8_t data){
+    
+	if(data){        
+        LED_PORT |= LED_DAT;
 	}else{
-		clear(*SPI_PORT, datPin);
+        LED_PORT &= ~LED_DAT;
 	}
-	set(*SPI_PORT, clkPin);
-	clear(*SPI_PORT, clkPin);
+    
+    LED_PORT |= LED_CLK;
+    LED_PORT &= ~LED_CLK;
+    
 }
 
+//TODO: Clean this up with a loop. 
+
 //bit bangs an SPI signal to the specified pins of the given data
-void sendByte(uint8_t clkPin, uint8_t datPin, uint8_t data){
-	sendBit(clkPin, datPin, bit_val(data,7));
-	sendBit(clkPin, datPin, bit_val(data,6));
-	sendBit(clkPin, datPin, bit_val(data,5));
-	sendBit(clkPin, datPin, bit_val(data,4));
-	sendBit(clkPin, datPin, bit_val(data,3));
-	sendBit(clkPin, datPin, bit_val(data,2));
-	sendBit(clkPin, datPin, bit_val(data,1));
-	sendBit(clkPin, datPin, bit_val(data,0));
+static void sendByte(uint8_t data){
+    
+	sendBit(bit_val(data,7));
+	sendBit(bit_val(data,6));
+	sendBit(bit_val(data,5));
+	sendBit(bit_val(data,4));
+	sendBit(bit_val(data,3));
+	sendBit(bit_val(data,2));
+	sendBit(bit_val(data,1));
+	sendBit(bit_val(data,0));
 }
 //bit bangs an SPI signal to the specified pins that generates the specified color 
 //	formatted for the APA102, provided as a byte array of R,G,B
-void sendColor(uint8_t clkPin, uint8_t datPin,const uint8_t color[3]){
-	if(!portSet){
-		return;
-	}
+
+void LED_sendColor(const uint8_t color[3]){
+
 	//Start Frame
-	sendByte(clkPin, datPin, 0x00);
-	sendByte(clkPin, datPin, 0x00);
-	sendByte(clkPin, datPin, 0x00);
-	sendByte(clkPin, datPin, 0x00);
+	sendByte(0x00);
+	sendByte(0x00);
+	sendByte(0x00);
+	sendByte(0x00);
 	//Data
-	sendByte(clkPin, datPin, 0xE1);//Set brightness to current to minimum TODO: Add setBrightness function (0xE1...0xFF)
-	sendByte(clkPin, datPin, color[2]);
-	sendByte(clkPin, datPin, color[1]);
-	sendByte(clkPin, datPin, color[0]);
+	sendByte(0xE1);//Set brightness to current to minimum TODO: Add setBrightness function (0xE1...0xFF)
+	sendByte(color[2]);
+	sendByte(color[1]);
+	sendByte(color[0]);
 }

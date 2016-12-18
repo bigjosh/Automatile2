@@ -6,6 +6,8 @@
  */ 
 #include <avr/io.h>
 
+// TODO: Combine all setup into a single hardcorded method that sets each register only once. 
+
 #ifndef PINS_H_
 #define PINS_H_
 
@@ -18,15 +20,23 @@
 #define PHOTO5 (1<<PA2)
 
 //IR LED output pin
+#define IR_PORT PORTB
+#define IR_DDR  DDRB
 #define IR (1<<PB2)
 
 //LED clock and data pins
-#define LEDCLK (1<<PB0)
-#define LEDDAT (1<<PB1)
+#define LED_PORT PORTB
+#define LED_DDR  DDRB
+#define LED_CLK (1<<PB0)
+#define LED_DAT (1<<PB1)
 
 //Pushbutton pin
+#define BUTTON_PORT PORTB
+#define BUTTON_DDR  DDRB
 #define BUTTON (1<<PB2)
 
 //Power control pin
-#define POWER (1<<PA6)
+#define POWER_PORT PORTA
+#define POWER_DDR  DDRA
+#define POWER_X (1<<PA6)          // 0 = Power on, 1=Power off
 #endif /* PINS_H_ */
