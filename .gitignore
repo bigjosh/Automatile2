@@ -48,5 +48,5 @@ Temporary Items
 
 
 #Artifacts
-/debug
-/release
+debug/
+release/
